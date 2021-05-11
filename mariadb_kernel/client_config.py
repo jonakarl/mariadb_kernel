@@ -37,6 +37,7 @@ class ClientConfig:
             ],
             "extra_db_init_config": [
                 "--auth-root-authentication-method=normal",
+                "--force",
             ],
         }
 
