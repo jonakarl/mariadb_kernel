@@ -1,0 +1,37 @@
+FROM jupyter/datascience-notebook:hub-1.1.0
+
+MAINTAINER jonas.karlsson@kau.se
+
+#APT OPTS
+ENV APT_OPTS -y --allow-downgrades --allow-remove-essential --allow-change-held-packages --no-install-recommends --no-install-suggests --allow-unauthenticated
+
+USER root
+WORKDIR /tmp
+RUN echo "Preparing for MariaDB" \
+    ## MariaDB
+    && apt-get update && apt-get install ${APT_OPTS} software-properties-common dirmngr gpg-agent \
+    && apt-key adv --fetch-keys 'https://mariadb.org/mariadb_release_signing_key.asc' \
+    && add-apt-repository 'deb [arch=amd64,arm64,ppc64el] https://mirror.dogado.de/mariadb/repo/10.5/ubuntu focal main' \
+    && apt-get update && apt-get install ${APT_OPTS} \
+    ## MariaDB
+    mariadb-server
+
+
+COPY . /mariadb_kernel/
+RUN cd /mariadb_kernel \
+    && python3 -m pip install -r requirements.txt  \
+    && python3 setup.py install \
+    && python3 -m mariadb_kernel.install \
+    && chown -R $NB_USER /mariadb_kernel/
+
+
+RUN fix-permissions $CONDA_DIR && fix-permissions ${HOME}
+
+WORKDIR ${HOME}
+USER $NB_USER
+
+#RUN cd /mariadb_kernel \
+#    && python3 -m pip install -r dev-requirements.txt  \
+#    && pytest -v --maxfail=2 --color=yes /mariadb_kernel/mariadb_kernel/tests/
+
+RUN echo "cd ${HOME}/work" >> ${HOME}/.bashrc 
